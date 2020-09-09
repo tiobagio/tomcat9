@@ -8,6 +8,14 @@
 
 tmp_path = Chef::Config[:file_cache_path]
 
+#pre-requisities
+package 'cairo' 
+package 'libpng' 
+package 'libjpeg' 
+package 'java' 
+package 'java-devel' 
+package 'openssl'
+
 group node['tomcat']['group'] do
   comment	'tomcat group'
   action 	:create
@@ -91,15 +99,15 @@ file node['tomcat']['ssl_certificate_key'] do
   mode '0600'
 end
 
-#bash 'save original conf/server/xml' do
-#  user node['tomcat']['user']
-#  group node['tomcat']['group']
-#  cwd node['tomcat']['install_location']
-#  code <<-EOH
-#    mv conf/server.xml conf/server.xml.orig
-#  EOH
-#  action :run
-#end
+bash 'save original conf/server/xml' do
+  user node['tomcat']['user']
+  group node['tomcat']['group']
+  cwd node['tomcat']['install_location']
+  code <<-EOH
+    mv conf/server.xml conf/server.xml.orig
+  EOH
+  action :run
+end
 
 bash 'create a keystore' do
   code <<-EOH  

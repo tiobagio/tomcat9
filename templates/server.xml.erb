@@ -46,9 +46,8 @@
            port="<%= node['tomcat']['ssl_port'] %>" maxThreads="200"
            scheme="https" secure="true" SSLEnabled="true"
            keystoreFile="<%= node['tomcat']['keystore'] %>" keystorePass="<%= node['tomcat']['keystore_password'] %>"
-           clientAuth="false" sslProtocol="TLS"
-</Connector>
-
+           clientAuth="false" sslProtocol="TLS" />
+           
     <!--
     <Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
                maxThreads="150" SSLEnabled="true">
