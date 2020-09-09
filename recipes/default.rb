@@ -4,6 +4,9 @@
 #
 # Copyright:: 2020, The Authors, All Rights Reserved.
 
+include_recipe 'java'
+
+tmp_path = Chef::Config[:file_cache_path]
 
 group 'tomcat' do
   comment	'tomcat group'
@@ -20,14 +23,28 @@ user "#node['tomcat']['user']" do
 end
 
 remote_file "#{tmp_path}/tomcat.tar.gz" do
-  source node['tomcat']['download_url']
+  source "http://archive.apache.org/dist/tomcat/tomcat-9/v9.0.37/bin/apache-tomcat-9.0.37.tar.gz" 
   owner node['tomcat']['user']
   group node['tomcat']['group']
   mode '0644'
   action :create
 end
 
+directory node['tomcat']['install_location'] do
+  owner node['tomcat']['user']
+  group node['tomcat']['group']
+  mode '0755'
+  action :create
+end
 
+bash 'Extract tomcat archive' do
+  user node['tomcat']['user']
+  cwd node['tomcat']['install_location']
+  code <<-EOH
+    tar -zxvf #{tmp_path}/tomcat.tar.gz --strip 1
+  EOH
+  action :run
+end
 
 # Generate self-signed SSL certificate unless the user has provided one
 if (node['tomcat']['ssl_certificate'].nil? &&

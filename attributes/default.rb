@@ -13,7 +13,8 @@ default['tomcat']['server-name'] = "pgws.com"
 default['tomcat']['ssl_company_name'] = "chef.io"
 default['tomcat']['ssl_organizational_unit_name'] = "sa"
 default['tomcat']['ssl_country_name'] = "sg"
-default['tomcat']['ssl_key_length'] = 2048
+default['tomcat']['ssl_key_length'] = 4096
 default['tomcat']['ssl_duration'] =  365
 
-
+default['tomcat']['keystore'] = "/opt/tomcat/keystore" 
+default['tomcat']['keystore_password'] = "changeit"
