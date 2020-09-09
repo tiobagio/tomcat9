@@ -4,7 +4,7 @@
 #
 # Copyright:: 2020, The Authors, All Rights Reserved.
 
-include_recipe 'java'
+#include_recipe 'java'
 
 tmp_path = Chef::Config[:file_cache_path]
 
