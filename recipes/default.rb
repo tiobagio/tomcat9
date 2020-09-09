@@ -8,15 +8,14 @@
 
 tmp_path = Chef::Config[:file_cache_path]
 
-group 'tomcat' do
+group node['tomcat']['group'] do
   comment	'tomcat group'
-  group_name    node['tomcat']['group']
   action 	:create
 end
 
-user "#node['tomcat']['user']" do
+user node['tomcat']['user'] do
   comment 'tomcat user'
-  gid    node['tomcat']['group']
+  gid   node['tomcat']['group']
   home 	node['tomcat']['install_location']
   shell '/bin/bash'
   action :create
@@ -39,6 +38,7 @@ end
 
 bash 'Extract tomcat archive' do
   user node['tomcat']['user']
+  group node['tomcat']['group']
   cwd node['tomcat']['install_location']
   code <<-EOH
     tar -zxvf #{tmp_path}/tomcat.tar.gz --strip 1
@@ -50,16 +50,17 @@ end
 if (node['tomcat']['ssl_certificate'].nil? &&
     node['tomcat']['ssl_certificate_key'].nil?)
 
-   ssl_keyfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server_name']}.key")
-   ssl_crtfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server_name']}.crt")
+   ssl_keyfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.key")
+   ssl_crtfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.crt")
 
-   server_name = node['tomcat']['server_name']
+   server_name = node['tomcat']['server-name']
 #   server_name_type = if OmnibusHelper.is_ip?(server_name)
 #                        "IP"
 #                      else
 #                        "DNS"
 #                      end
 
+# create self-signed certificate
    openssl_x509 ssl_crtfile do
      common_name server_name
      org node['tomcat']['ssl_company_name']
@@ -77,7 +78,7 @@ if (node['tomcat']['ssl_certificate'].nil? &&
   node.default['tomcat']['ssl_certificate_key'] = ssl_keyfile
 end
 
-# The cert and key must be readable by the opscode user since rabbitmq also reads it
+# The cert and key must be readable by the tomcat user
 file node['tomcat']['ssl_certificate'] do
   owner  node['tomcat']['user']
   group  node['tomcat']['group']
@@ -88,6 +89,42 @@ file node['tomcat']['ssl_certificate_key'] do
   owner  node['tomcat']['user']
   group  node['tomcat']['group']
   mode '0600'
+end
+
+#bash 'save original conf/server/xml' do
+#  user node['tomcat']['user']
+#  group node['tomcat']['group']
+#  cwd node['tomcat']['install_location']
+#  code <<-EOH
+#    mv conf/server.xml conf/server.xml.orig
+#  EOH
+#  action :run
+#end
+
+bash 'create a keystore' do
+  code <<-EOH  
+  keytool -genkey -noprompt \
+    -alias alias1 \
+    -dname "CN=tech.gov.sg, OU=gcc, O=gcc, L=SG, S=SG, C=SG" \
+    -keystore "#{node['tomcat']['keystore']}" \
+    -storepass "#{node['tomcat']['keystore_password']}"
+  EOH
+  action :run
+end
+
+
+bash 'import tomcat key to keystore' do
+  cwd node['tomcat']['install_location']
+  code <<-EOH
+  keytool -importcert -alias newkey -keystore "#{node['tomcat']['keystore']}" \
+  -trustcacerts -file "#{ssl_crtfile}" --storepass "#{node['tomcat']['keystore_password']}" --no-prompt
+  EOH
+  action :run
+end
+
+bash 'chmod keystore' do
+  code "chown tomcat:tomcat /opt/tomcat/keystore"
+  action :run
 end
 
 template "#{node['tomcat']['install_location']}/conf/server.xml" do
