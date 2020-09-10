@@ -67,7 +67,7 @@ if (node['tomcat']['ssl_certificate'].nil? &&
   node['tomcat']['ssl_certificate_key'].nil?)
 
  ssl_keyfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.key")
- ssl_crtfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.crt")
+ ssl_crtfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.pem")
 
   bash 'create self-signed certificate' do
     user node['tomcat']['user']
@@ -79,6 +79,9 @@ if (node['tomcat']['ssl_certificate'].nil? &&
     EOH
     action :run 
   end
+#openssl req -x509 -newkey rsa:4096 -keyout /tmp/tkey.pem -out /tmp/tcert.pem -days 365 \
+# -subj "/C=SG/ST=Singapore/L=Singapore/O=Chef Software/OU=SA Department/CN=example.com" -nodes
+#default['tomcat']['install_location'] = "/opt/tomcat"
 
   node.default['tomcat']['ssl_certificate'] = ssl_crtfile
   node.default['tomcat']['ssl_certificate_key'] = ssl_keyfile   
@@ -94,13 +97,17 @@ bash 'save original conf/server/xml' do
   action :run
 end
 
+# keytool -genkey -noprompt -alias tomcat -keyalg RSA -keystore /opt/tomcat/keystore \
+# -dname "CN=tech.gov.sg, OU=gcc, O=gcc, L=SG, S=SG, C=SG"  -storepass changeit -keypass changeit
+
 bash 'create a keystore' do
   user node['tomcat']['user']
   group node['tomcat']['group']
   code <<-EOH  
   keytool -genkey -noprompt \
     -alias tomcat \
-    -dname "CN=tech.gov.sg, OU=gcc, O=gcc, L=SG, S=SG, C=SG" \
+    -keyalg RSA \
+    -dname \"CN=tech.gov.sg, OU=gcc, O=gcc, L=SG, S=SG, C=SG\" \
     -keystore "#{node['tomcat']['keystore']}" \
     -storepass "#{node['tomcat']['keystore_password']}" \
     -keypass "#{node['tomcat']['keystore_password']}"
@@ -108,21 +115,20 @@ bash 'create a keystore' do
   action :run
 end
 
-
+#keytool -import -alias toldkey -keystore /opt/tomcat/keystore -trustcacerts -file /opt/tomcat/pgws_com.crt -storepass changeit -noprompt
 bash 'import tomcat key to keystore' do
   user node['tomcat']['user']
   group node['tomcat']['group']
   cwd node['tomcat']['install_location']
   code <<-EOH
-  keytool -importcert -alias selfsignkey -keystore "#{node['tomcat']['keystore']}" \
+  keytool -import -alias selfsignkey -keystore "#{node['tomcat']['keystore']}" \
   -trustcacerts -file "#{ssl_crtfile}" -storepass "#{node['tomcat']['keystore_password']}" -noprompt
   EOH
   action :run
 end
 
 
-
-template "#{node['tomcat']['install_location']}/conf/server.xml" do
+template "/opt/tomcat/conf/server.xml" do
   source 'server.xml.erb'
   owner node['tomcat']['user']
   mode '0644'
