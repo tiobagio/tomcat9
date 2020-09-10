@@ -63,26 +63,63 @@ bash 'chmod keystore' do
   action :run
 end
 
+# Generate self-signed SSL certificate unless the user has provided one
 if (node['tomcat']['ssl_certificate'].nil? &&
-  node['tomcat']['ssl_certificate_key'].nil?)
+    node['tomcat']['ssl_certificate_key'].nil?)
 
- ssl_keyfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.key")
- ssl_crtfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.crt")
+   ssl_keyfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.key")
+   ssl_crtfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.crt")
 
-  bash 'create self-signed certificate' do
-    user node['tomcat']['user']
-    group node['tomcat']['group']
-    cwd node['tomcat']['install_location']
-    code <<-EOH
-    openssl req -x509 -nodes -newkey rsa:4096 -keyout "#{ssl_keyfile}" -out "#{ssl_crtfile}" -days 365 \
-    -subj \"/C=SG/ST=Singapore/L=Singapore/O=Chef Software/OU=SA Department/CN=example.com\"
-    EOH
-    action :run 
-  end
+   server_name = node['tomcat']['server-name']
+#   server_name_type = if OmnibusHelper.is_ip?(server_name)
+#                        "IP"
+#                      else
+#                        "DNS"
+#                      end
+
+#default['tomcat']['server-name'] = "pgws_com"
+
+## ssl information
+#default['tomcat']['ssl_company_name'] = "chef.io"
+#default['tomcat']['ssl_organizational_unit_name'] = "sa"
+#default['tomcat']['ssl_country_name'] = "sg"
+#default['tomcat']['ssl_key_length'] = 4096
+#default['tomcat']['ssl_duration'] =  365
+# create self-signed certificate
+   openssl_x509_certificate ssl_crtfile do
+     country  node['tomcat']['ssl_country_name']
+     city     node['tomcat']['ssl_country_name']
+     state    node['tomcat']['ssl_country_name']
+     org      node['tomcat']['ssl_company_name']
+     org_unit node['tomcat']['ssl_organizational_unit_name']
+     common_name server_name
+
+     key_length node['tomcat']['ssl_key_length']
+#     subject_alt_name [ "#{server_name_type}:#{server_name}" ]
+     owner node['tomcat']['user']
+     group node['tomcat']['group']
+     ca_key_pass "changeit"
+     ca_cert_file ssl_crtfile
+     ca_key_file  ssl_keyfile
+     mode '0600'
+   end
 
   node.default['tomcat']['ssl_certificate'] = ssl_crtfile
-  node.default['tomcat']['ssl_certificate_key'] = ssl_keyfile   
+  node.default['tomcat']['ssl_certificate_key'] = ssl_keyfile
 end
+
+# The cert and key must be readable by the tomcat user
+#file node['tomcat']['ssl_certificate'] do
+#  owner  node['tomcat']['user']
+#  group  node['tomcat']['group']
+#  mode '0600'
+#end
+
+#file node['tomcat']['ssl_certificate_key'] do
+#  owner  node['tomcat']['user']
+#  group  node['tomcat']['group']
+#  mode '0600'
+#end
 
 bash 'save original conf/server/xml' do
   user node['tomcat']['user']
@@ -137,3 +174,4 @@ end
 service 'tomcat' do
   action [:enable, :start]
 end
+
