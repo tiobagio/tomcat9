@@ -18,3 +18,8 @@ default['tomcat']['ssl_duration'] =  365
 
 default['tomcat']['keystore'] = "/opt/tomcat/keystore" 
 default['tomcat']['keystore_password'] = "changeit"
+
+
+## guacamole
+default['guacd']['user'] = "psmgwuser"
+default['guacd']['group'] = "psmgwuser"

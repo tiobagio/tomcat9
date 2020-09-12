@@ -4,7 +4,6 @@
 #
 # Copyright:: 2020, The Authors, All Rights Reserved.
 
-#include_recipe 'java'
 
 tmp_path = Chef::Config[:file_cache_path]
 
@@ -143,3 +142,5 @@ end
 service 'tomcat' do
   action [:enable, :start]
 end
+
+#include_recipe "tomcat9::guacd"
