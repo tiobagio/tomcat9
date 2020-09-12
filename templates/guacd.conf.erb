@@ -19,7 +19,5 @@ bind_port = 4822
 
 [ssl]
 
-#server_certificate = <%= node['tomcat']['ssl_certificate'] %> #/opt/tomcat/pgws_com.pem
-#server_key = <%= node['tomcat']['ssl_certificate_key'] %>      #/opt/tomcat/pgws_com.key
-server_certificate = /opt/tomcat/pgws_com.pem
-server_key = /opt/tomcat/pgws_com.key
+server_certificate = <%= node['tomcat']['ssl_certificate'] %>    #/opt/tomcat/pgws_com.pem
+server_key =<%= node['tomcat']['ssl_certificate_key'] %>         #/opt/tomcat/pgws_com.key

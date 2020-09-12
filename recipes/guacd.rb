@@ -35,9 +35,11 @@ rpm_package 'CARKpsmgw' do
 end
 
 # erase the following line if it's called from default.rb
-node.default['tomcat']['ssl_certificate'] = "/opt/tomcat/pgws_com.pem"
 ssl_keyfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.key")
 ssl_crtfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.pem")
+
+node.default['tomcat']['ssl_certificate'] = ssl_crtfile
+node.default['tomcat']['ssl_certificate_key'] = ssl_keyfile   
 
 bash 'import certificate into jvm keystore' do
   code <<-EOH
