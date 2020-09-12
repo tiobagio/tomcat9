@@ -55,13 +55,14 @@ bash 'Extract tomcat archive' do
   action :run
 end
 
-bash 'chmod keystore' do
+bash 'chmod tomcat install directory' do
   code <<-EOH
   chown -R tomcat:tomcat "#{node['tomcat']['install_location']}"
   EOH
   action :run
 end
 
+#create self-signed certificate
 if (node['tomcat']['ssl_certificate'].nil? &&
   node['tomcat']['ssl_certificate_key'].nil?)
 
@@ -114,7 +115,7 @@ bash 'create a keystore' do
   action :run
 end
 
-#keytool -import -alias toldkey -keystore /opt/tomcat/keystore -trustcacerts -file /opt/tomcat/pgws_com.crt -storepass changeit -noprompt
+#keytool -import -alias toldkey -keystore /opt/tomcat/keystore -trustcacerts -file /opt/tomcat/psmgw_com.crt -storepass changeit -noprompt
 bash 'import tomcat key to keystore' do
   user node['tomcat']['user']
   group node['tomcat']['group']
@@ -126,13 +127,14 @@ bash 'import tomcat key to keystore' do
   action :run
 end
 
-
+# configure server.xml
 template "/opt/tomcat/conf/server.xml" do
   source 'server.xml.erb'
   owner node['tomcat']['user']
   mode '0644'
 end
 
+# configure tomcat service
 template "/etc/systemd/system/tomcat.service" do
   source 'tomcat.service.erb'
   owner 'root'

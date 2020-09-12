@@ -13,10 +13,13 @@ end
 
 user node['guacd']['user'] do
   comment 'guacd user'
+  gid   node['guacd']['group']
   home 	'/home/psmgwuser'
   shell '/sbin/nologin'
   action :create
 end
+
+
 
 template "/var/tmp/psmgwparms" do
   source 'psmgwparms.erb'
@@ -31,13 +34,16 @@ rpm_package 'CARKpsmgw' do
   action :install
 end
 
+# erase the following line if it's called from default.rb
+node.default['tomcat']['ssl_certificate'] = "/opt/tomcat/pgws_com.pem"
+ssl_keyfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.key")
+ssl_crtfile = File.join(node['tomcat']['install_location'], "#{node['tomcat']['server-name']}.pem")
 
-#node.default['tomcat']['ssl_certificate'] = /opt/tomcat/pgws_com.pem
 bash 'import certificate into jvm keystore' do
   code <<-EOH
   RPATH=`readlink -f /usr/bin/java | sed "s:bin/java::"`; \
   keytool -import -alias webapp_guacd_cert2 -keystore $RPATH/lib/security/cacerts \
-  -trustcacerts -file "#{node['tomcat']['ssl_certificate']}" -storepass "#{node['tomcat']['keystore_password']}" -noprompt
+  -trustcacerts -file "#{ssl_crtfile}" -storepass "#{node['tomcat']['keystore_password']}" -noprompt
   EOH
   action :run
 end

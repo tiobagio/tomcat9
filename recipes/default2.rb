@@ -56,13 +56,14 @@ bash 'Extract tomcat archive' do
   action :run
 end
 
-bash 'chmod keystore' do
+bash 'chmod tomcat install directory' do
   code <<-EOH
   chown -R tomcat:tomcat "#{node['tomcat']['install_location']}"
   EOH
   action :run
 end
 
+# create self-signed certificate
 if (node['tomcat']['ssl_certificate'].nil? &&
   node['tomcat']['ssl_certificate_key'].nil?)
 
@@ -76,6 +77,11 @@ if (node['tomcat']['ssl_certificate'].nil? &&
 #default['tomcat']['ssl_key_length'] = 4096
 #default['tomcat']['ssl_duration'] =  365
 # create self-signed certificate
+
+#openssl req -x509 -newkey rsa:4096 -keyout /tmp/tkey.pem -out /tmp/tcert.pem -days 365 \
+# -subj "/C=SG/ST=Singapore/L=Singapore/O=Chef Software/OU=SA Department/CN=example.com" -nodes
+#default['tomcat']['install_location'] = "/opt/tomcat"
+
 openssl_x509_certificate ssl_crtfile do
   country  node['tomcat']['ssl_country_name']
   city     node['tomcat']['ssl_country_name']
@@ -88,27 +94,8 @@ openssl_x509_certificate ssl_crtfile do
   owner node['tomcat']['user']
   group node['tomcat']['group']
   ca_key_pass "changeit"
-  ca_cert_file ssl_crtfile
-  ca_key_file  ssl_keyfile
   mode '0600'
 end
-
-#openssl req -x509 -newkey rsa:4096 -keyout /tmp/tkey.pem -out /tmp/tcert.pem -days 365 \
-# -subj "/C=SG/ST=Singapore/L=Singapore/O=Chef Software/OU=SA Department/CN=example.com" -nodes
-#default['tomcat']['install_location'] = "/opt/tomcat"
-
-#  bash 'create self-signed certificate' do
-#    user node['tomcat']['user']
-#    group node['tomcat']['group']
-#    cwd node['tomcat']['install_location']
-#    code <<-EOH
-#    openssl req -x509 -nodes -newkey rsa:4096 -keyout "#{ssl_keyfile}" -out "#{ssl_crtfile}" -days 365 \
-#    -subj \"/C=SG/ST=Singapore/L=Singapore/O=Chef Software/OU=SA Department/CN=example.com\"
-#    EOH
-#    action :run 
-#  end
-
-
 
   node.default['tomcat']['ssl_certificate'] = ssl_crtfile
   node.default['tomcat']['ssl_certificate_key'] = ssl_keyfile   
@@ -142,7 +129,7 @@ bash 'create a keystore' do
   action :run
 end
 
-#keytool -import -alias toldkey -keystore /opt/tomcat/keystore -trustcacerts -file /opt/tomcat/pgws_com.crt -storepass changeit -noprompt
+#keytool -import -alias toldkey -keystore /opt/tomcat/keystore -trustcacerts -file /opt/tomcat/psmgw_com.crt -storepass changeit -noprompt
 bash 'import tomcat key to keystore' do
   user node['tomcat']['user']
   group node['tomcat']['group']
@@ -154,13 +141,14 @@ bash 'import tomcat key to keystore' do
   action :run
 end
 
-
+# configure server.xml
 template "/opt/tomcat/conf/server.xml" do
   source 'server.xml.erb'
   owner node['tomcat']['user']
   mode '0644'
 end
 
+# configure tomat service
 template "/etc/systemd/system/tomcat.service" do
   source 'tomcat.service.erb'
   owner 'root'
@@ -170,3 +158,5 @@ end
 service 'tomcat' do
   action [:enable, :start]
 end
+
+#include_recipe "tomcat9::guacd"

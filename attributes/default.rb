@@ -7,7 +7,7 @@ default['tomcat']['java_options'] = "-Xmx128M"
 default['tomcat']['user'] = "tomcat"
 default['tomcat']['group'] = "tomcat"
 default['tomcat']['autostart'] = "true"
-default['tomcat']['server-name'] = "pgws_com"
+default['tomcat']['server-name'] = "psmgw_wcom"
 
 ## ssl information
 default['tomcat']['ssl_company_name'] = "chef.io"
