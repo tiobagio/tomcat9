@@ -127,6 +127,7 @@ bash 'create a keystore' do
     -keypass "#{node['tomcat']['keystore_password']}"
   EOH
   action :run
+  not_if { ::File.exist?("#{node['tomcat']['keystore']}") }
 end
 
 #keytool -import -alias toldkey -keystore /opt/tomcat/keystore -trustcacerts -file /opt/tomcat/psmgw_com.crt -storepass changeit -noprompt
@@ -139,6 +140,7 @@ bash 'import tomcat key to keystore' do
   -trustcacerts -file "#{ssl_crtfile}" -storepass "#{node['tomcat']['keystore_password']}" -noprompt
   EOH
   action :run
+  not_if "keytool -list -alias selfsignkey -keystore '#{node['tomcat']['keystore']}' -storepass '#{node['tomcat']['keystore_password']}' "
 end
 
 # configure server.xml

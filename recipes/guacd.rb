@@ -48,6 +48,7 @@ bash 'import certificate into jvm keystore' do
   -trustcacerts -file "#{ssl_crtfile}" -storepass "#{node['tomcat']['keystore_password']}" -noprompt
   EOH
   action :run
+  not_if "keytool -list -alias webapp_guacd_cert2 -keystore $(readlink -f /usr/bin/java |sed \"s:bin/java::\")/lib/security/cacerts -storepass '#{node['tomcat']['keystore_password']}' "
 end
 
 
